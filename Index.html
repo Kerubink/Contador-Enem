@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador ENEM</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Contador ENEM</h1>
+
+        <label for="daySelect">Escolha o dia da prova:</label>
+        <select id="daySelect">
+            <option value="first">Primeiro dia (5h30min)</option>
+            <option value="second">Segundo dia (5h)</option>
+        </select>
+
+        <button id="startButton">Iniciar Contador</button>
+
+        <div id="countdown">00:00</div>
+
+        <ul id="horarios">
+            <!-- Os horários serão gerados aqui dinamicamente -->
+        </ul>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

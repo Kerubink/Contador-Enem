@@ -1,0 +1,111 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    margin: 50px auto;
+    width: 90%;
+    max-width: 400px;
+    background: white;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+h1 {
+    color: #333;
+}
+
+label {
+    font-size: 1.2em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+select, button {
+    font-size: 1em;
+    padding: 10px;
+    margin: 10px 0;
+    width: 100%;
+    cursor: pointer;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#countdown {
+    font-size: 2em;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    font-size: 1.2em;
+    margin: 15px 0;
+    position: relative;
+    display: flex;
+}
+
+li .time-box {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #333;
+    position: absolute;
+    left: 0;
+}
+
+li .check {
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    left: -30px;
+    top: -5px;
+    opacity: 0;
+}
+
+.checkbox-wrapper {
+    position: relative;
+}
+
+.checkbox-wrapper .label {
+    cursor: pointer;
+}
+
+.checkbox-wrapper .path1 {
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+    transition: .5s stroke-dashoffset;
+    opacity: 0;
+}
+
+.checkbox-wrapper .check:checked + label svg .path1 {
+    stroke-dashoffset: 0;
+    opacity: 1;
+}
+
+@keyframes riscar {
+    0% {
+        background-color: transparent;
+    }
+    100% {
+        background-color: red;
+        transform: rotate(45deg);
+    }
+}

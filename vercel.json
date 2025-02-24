@@ -5,11 +5,5 @@
       "src": "index.html",
       "use": "@vercel/static"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)\.(css|js)$",
-      "dest": "/$1.$2"
-    }
   ]
 }

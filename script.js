@@ -6,21 +6,26 @@ document.addEventListener("DOMContentLoaded", function () {
     let timer;
     let horarios = [];
     let contadorAtivo = false;
+    let inicioFicticio; // Variável para armazenar o horário fictício fixo
 
-    function gerarHorarios(dia, inicio) {
+    function gerarHorarios(dia) {
         horarios = [];
         let duracao = dia === "first" ? 5.5 : 5; // 5h30min ou 5h
 
-        // Calcula os horários a partir do momento de início
-        for (let i = 0; i <= duracao * 2; i++) {  // multiplicado por 2 porque temos intervalos de 30 minutos
-            let hora = new Date(inicio.getTime());
+        // Define o horário fictício de início como 13:30
+        inicioFicticio = new Date();
+        inicioFicticio.setHours(13, 30, 0, 0);
+
+        // Calcula os horários a partir do início fictício
+        for (let i = 0; i <= duracao * 2; i++) { // Intervalos de 30 minutos
+            let hora = new Date(inicioFicticio.getTime());
             hora.setMinutes(hora.getMinutes() + (i * 30));
 
             let horarioFormatado = `${String(hora.getHours()).padStart(2, '0')}:${String(hora.getMinutes()).padStart(2, '0')}`;
             horarios.push(horarioFormatado);
         }
 
-        horariosList.innerHTML = ""; // Limpar a lista antes de adicionar os horários
+        horariosList.innerHTML = ""; // Limpa a lista antes de adicionar os horários
 
         horarios.forEach(horario => {
             const horarioId = horario.replace(":", "-");
@@ -54,34 +59,38 @@ document.addEventListener("DOMContentLoaded", function () {
         contadorAtivo = true;
         startButton.textContent = "Parar Contador";
 
-        // Pega o horário atual do sistema
-        const horaAtual = new Date();
+        gerarHorarios(daySelect.value);
 
-        // Gerar os horários a partir do horário atual
-        gerarHorarios(daySelect.value, horaAtual);
-
-        // Inicia o cronômetro
         timer = setInterval(function () {
-            const horaAtual = new Date();
-            const horaAtualFormatada = `${String(horaAtual.getHours()).padStart(2, '0')}:${String(horaAtual.getMinutes()).padStart(2, '0')}`;
+            const agora = new Date();
+            
+            // Cálculo do tempo decorrido desde o início fictício (13:30)
+            let tempoDecorrido = agora - inicioFicticio;
 
-            // Verifica se algum horário já passou e risca o quadrado correspondente
             horarios.forEach(horario => {
                 const horarioId = horario.replace(":", "-");
-                if (horario === horaAtualFormatada) {
+
+                // Converte o horário da lista para um objeto Date comparável
+                let horaSimulada = new Date(inicioFicticio.getTime());
+                let [h, m] = horario.split(":").map(Number);
+                horaSimulada.setHours(h, m, 0, 0);
+
+                // Marca o checkbox se o horário simulado já tiver passado
+                if (horaSimulada - inicioFicticio <= tempoDecorrido) {
                     document.querySelector(`#check-${horarioId}`).checked = true;
                 }
             });
 
-            // Calcula o tempo restante
-            const tempoRestante = Math.max(0, (daySelect.value === "first" ? 5.5 : 5) * 60 * 60 * 1000 - (horaAtual - new Date(horaAtual.getFullYear(), horaAtual.getMonth(), horaAtual.getDate(), horaAtual.getHours(), horaAtual.getMinutes()))); // tempo restante da prova em milissegundos
-            const horasRestantes = Math.floor(tempoRestante / (1000 * 60 * 60)); // Converte de milissegundos para horas
-            const minutosRestantes = Math.floor((tempoRestante % (1000 * 60 * 60)) / (1000 * 60)); // Converte para minutos
-            const segundosRestantes = Math.floor((tempoRestante % (1000 * 60)) / 1000); // Converte para segundos
+            // Calcula o tempo restante baseado no tempo fictício
+            const tempoTotal = (daySelect.value === "first" ? 5.5 : 5) * 60 * 60 * 1000;
+            const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
+
+            const horasRestantes = Math.floor(tempoRestante / (1000 * 60 * 60));
+            const minutosRestantes = Math.floor((tempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+            const segundosRestantes = Math.floor((tempoRestante % (1000 * 60)) / 1000);
 
             countdown.textContent = `${String(horasRestantes).padStart(2, '0')}:${String(minutosRestantes).padStart(2, '0')}:${String(segundosRestantes).padStart(2, '0')}`;
-
-        }, 1000); // Atualiza a cada 1 segundo
+        }, 1000);
     }
 
     startButton.addEventListener("click", iniciarContador);
@@ -91,7 +100,9 @@ document.addEventListener("DOMContentLoaded", function () {
             contadorAtivo = false;
             startButton.textContent = "Iniciar Contador";
         }
-
-        gerarHorarios(daySelect.value, new Date());
+        gerarHorarios(daySelect.value);
     });
+
+    // Inicializa com os horários do primeiro dia
+    gerarHorarios(daySelect.value);
 });

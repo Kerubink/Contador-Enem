@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let tempoDecorridoSalvo = localStorage.getItem("tempoDecorrido") || 0; // Recupera o tempo decorrido do localStorage
 
     const audioAlert = new Audio('alarme.mp3'); // Áudio para o alerta de 15min
-    const audioEnd = new Audio('alerta-fim.mp3'); // Áudio para o fim da prova
+    const audioEnd = new Audio('alarmeSchool.mp3'); // Áudio para o fim da prova
+    const audioInicio = new Audio('alarmeSchool.mp3'); // Áudio para o início do contador
 
     function gerarHorarios(dia) {
         horarios = [];
@@ -84,6 +85,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         contadorAtivo = true;
         startButton.textContent = "Parar Contador";
+
+        // Toca o áudio quando o contador inicia
+        audioInicio.play();
 
         // Define o momento real do início do contador
         tempoInicial = new Date() - tempoDecorridoSalvo; // Continuar de onde parou

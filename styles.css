@@ -24,6 +24,8 @@ label {
     font-size: 1.2em;
     display: block;
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
 }
 
 select, button {

@@ -12,6 +12,14 @@
     {
       "src": "script.js",
       "use": "@vercel/static"
+    },
+    {
+      "src": "alarme.mp3",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "alarmeSchool.mp3",
+      "use": "@vercel/static"
     }
   ]
 }

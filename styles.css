@@ -36,12 +36,26 @@ select, button {
     cursor: pointer;
 }
 
+.buttons {
+    display: flex;
+    gap: 5px;
+
+    .resetButton {
+        width: 50px;
+        font-size: 40px;
+        padding: 0;
+        background-color: transparent;
+    }
+}
+
 button {
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
+
 }
+
 
 button:hover {
     background-color: #0056b3;

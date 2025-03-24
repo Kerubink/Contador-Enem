@@ -5,51 +5,63 @@ document.addEventListener("DOMContentLoaded", function () {
     const daySelect = document.getElementById("daySelect");
     const horariosList = document.getElementById("horarios");
     const countdown = document.getElementById("countdown");
+
+    // Criando os controles de velocidade dinamicamente
+    const speedControls = document.createElement('div');
+    // speedControls.className = 'speed-controls';
+    // speedControls.innerHTML = `
+    //     <p>Velocidade de Teste:</p>
+    //     <button class="speed-btn active" data-speed="1">1x</button>
+    //     <button class="speed-btn" data-speed="10">10x</button>
+    //     <button class="speed-btn" data-speed="60">60x</button>
+    //     <button class="speed-btn" data-speed="600">600x</button>
+    // `;
+    // countdown.parentNode.insertBefore(speedControls, countdown.nextSibling);
+
     let timer;
     let horarios = [];
     let contadorAtivo = false;
     let tempoInicial;
-    let tempoDecorridoSalvo = localStorage.getItem("tempoDecorrido") || 0; // Recupera o tempo decorrido do localStorage
+    let tempoDecorridoSalvo = localStorage.getItem("tempoDecorrido") || 0;
+    let speedMultiplier = 1; // Multiplicador de velocidade padrão (1x)
 
-    const audioAlert = new Audio('/alarme.mp3'); // Áudio para o alerta de 15min
-    const audioEnd = new Audio('/alarmeSchool.mp3'); // Áudio para o fim da prova
-    const audioInicio = new Audio('/alarmeSchool.mp3'); // Áudio para o início do contador
+    const audioAlert = new Audio('/alarme.mp3');
+    const audioEnd = new Audio('/alarmeSchool.mp3');
+    const audioInicio = new Audio('/alarmeSchool.mp3');
+
+    let alerta15MinDisparado = false;
+    let alerta5MinDisparado = false;
 
     function gerarHorarios(dia) {
         horarios = [];
-        let duracao = dia === "first" ? 5.5 : 5; // 5h30min ou 5h
+        let duracao = dia === "first" ? 5.5 : 5;
 
-        // Define o horário fictício de início como 13:30
         let inicioFicticio = new Date();
         inicioFicticio.setHours(13, 30, 0, 0);
 
-        // Gera os horários a partir do horário fictício
-        for (let i = 0; i <= duracao * 2; i++) { // Intervalos de 30 minutos
+        // Gerar horários a cada 30 minutos
+        const numeroIntervalos = Math.floor(duracao * 2); // 5.5h = 11 intervalos de 30 min
+        for (let i = 0; i <= numeroIntervalos; i++) {
             let hora = new Date(inicioFicticio.getTime());
             hora.setMinutes(hora.getMinutes() + (i * 30));
-
-            let horarioFormatado = `${String(hora.getHours()).padStart(2, '0')}:${String(hora.getMinutes()).padStart(2, '0')}`;
-            horarios.push(horarioFormatado);
+            horarios.push(formatarHorario(hora));
         }
 
-        // Adicionando os horários de alerta (15min e 5min antes do final da prova)
-        const tempoFinal = (dia === "first" ? 5.5 : 5) * 60 * 60 * 1000; // Duração total da prova em ms
+        // Adicionar marcos de 15 e 5 minutos antes do final
+        const tempoFinal = duracao * 60 * 60 * 1000;
         const ultimoHorario = new Date(inicioFicticio.getTime() + tempoFinal);
+        horarios.push(formatarHorario(new Date(ultimoHorario.getTime() - 15 * 60 * 1000)));
+        horarios.push(formatarHorario(new Date(ultimoHorario.getTime() - 5 * 60 * 1000)));
 
-        // Hora de 15 minutos antes do final da prova
-        horarios.push(formatarHorario(new Date(ultimoHorario.getTime() - 15 * 60 * 1000))); // 15 minutos antes
-        // Hora de 5 minutos antes do final da prova
-        horarios.push(formatarHorario(new Date(ultimoHorario.getTime() - 5 * 60 * 1000)));  // 5 minutos antes
-
-        // Ordenando os horários em ordem crescente
+        // Ordenar horários numericamente
         horarios.sort((a, b) => {
             const [ah, am] = a.split(':').map(Number);
             const [bh, bm] = b.split(':').map(Number);
-            return ah !== bh ? ah - bh : am - bm;
+            return (ah * 60 + am) - (bh * 60 + bm);
         });
 
-        horariosList.innerHTML = ""; // Limpa a lista antes de adicionar os horários
-
+        // Exibir horários na interface
+        horariosList.innerHTML = "";
         horarios.forEach(horario => {
             const horarioId = horario.replace(":", "-");
             const li = document.createElement("li");
@@ -86,61 +98,89 @@ document.addEventListener("DOMContentLoaded", function () {
         contadorAtivo = true;
         startButton.textContent = "Parar Contador";
 
-        // Toca o áudio quando o contador inicia
+        // Resetar e tocar áudio de início
+        audioInicio.currentTime = 0;
         audioInicio.play();
 
-        // Define o momento real do início do contador
-        tempoInicial = new Date() - tempoDecorridoSalvo; // Continuar de onde parou
+        tempoInicial = new Date() - tempoDecorridoSalvo;
 
-        // Atualiza os horários de acordo com o dia selecionado
         gerarHorarios(daySelect.value);
 
-        timer = setInterval(function () {
-            const agora = new Date();
-            let tempoDecorrido = agora - tempoInicial; // Tempo decorrido desde que iniciou o contador
+        // Resetar alertas
+        alerta15MinDisparado = false;
+        alerta5MinDisparado = false;
 
-            // Salva o tempo decorrido no localStorage
-            localStorage.setItem("tempoDecorrido", tempoDecorrido);
+        timer = setInterval(updateTimer, 1000 / speedMultiplier);
+    }
 
-            horarios.forEach((horario, index) => {
-                const horarioId = horario.replace(":", "-");
-                
-                // O tempo fictício começa "imaginariamente" às 13:30 e avança de meia em meia hora
-                let tempoSimulado = index * 30 * 60 * 1000; // Cada horário está a 30min do anterior
-
-                // Se o tempo decorrido for maior ou igual ao tempo simulado, marcar o checkbox
-                if (tempoDecorrido >= tempoSimulado) {
-                    document.querySelector(`#check-${horarioId}`).checked = true;
-                }
-            });
-
-            // Calcula o tempo restante com base na duração da prova
-            const tempoTotal = (daySelect.value === "first" ? 5.5 : 5) * 60 * 60 * 1000;
-            const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
-
-            const horasRestantes = Math.floor(tempoRestante / (1000 * 60 * 60));
-            const minutosRestantes = Math.floor((tempoRestante % (1000 * 60 * 1000)) / (1000 * 60));
-            const segundosRestantes = Math.floor((tempoRestante % (1000 * 60)) / 1000);
-
-            countdown.textContent = `${String(horasRestantes).padStart(2, '0')}:${String(minutosRestantes).padStart(2, '0')}:${String(segundosRestantes).padStart(2, '0')}`;
-
-            // Alerta de 15 minutos antes do final
-            if (tempoRestante <= 15 * 60 * 1000 && tempoRestante > 14 * 60 * 1000) {
-                audioAlert.play();
+    function updateTimer() {
+        const agora = new Date();
+        // Tempo decorrido real (considerando velocidade)
+        let tempoDecorrido = (agora - tempoInicial) * speedMultiplier;
+        
+        // Salvar progresso
+        localStorage.setItem("tempoDecorrido", tempoDecorrido);
+    
+        // Calcular tempo restante
+        const tempoTotal = (daySelect.value === "first" ? 5.5 : 5) * 60 * 60 * 1000;
+        const tempoRestante = Math.max(0, tempoTotal - tempoDecorrido);
+    
+        // Marcar horários concluídos - CORREÇÃO AQUI
+        horarios.forEach((horario, index) => {
+            const horarioId = horario.replace(":", "-");
+            // Calcula o tempo simulado baseado no horário real, não no índice
+            const partes = horario.split(':');
+            const horas = parseInt(partes[0]);
+            const minutos = parseInt(partes[1]);
+            
+            // Horário de início fictício (13:30)
+            const inicioFicticio = new Date();
+            inicioFicticio.setHours(13, 30, 0, 0);
+            
+            // Calcula a diferença em milissegundos para cada horário
+            const horarioAlvo = new Date(inicioFicticio);
+            horarioAlvo.setHours(horas, minutos, 0, 0);
+            
+            const tempoSimulado = horarioAlvo - inicioFicticio;
+            
+            if (tempoDecorrido >= tempoSimulado) {
+                document.querySelector(`#check-${horarioId}`).checked = true;
             }
-
-            // Alerta de 5 minutos antes do final
-            if (tempoRestante <= 5 * 60 * 1000 && tempoRestante > 4 * 60 * 1000) {
-                audioAlert.play();
-            }
-
-            // Alerta no fim da prova
-            if (tempoRestante <= 0) {
-                clearInterval(timer);
-                audioEnd.play();
-                countdown.textContent = "Fim da Prova!";
-            }
-        }, 1000);
+        });
+    
+        const horasRestantes = Math.floor(tempoRestante / (1000 * 60 * 60));
+        const minutosRestantes = Math.floor((tempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+        const segundosRestantes = Math.floor((tempoRestante % (1000 * 60)) / 1000);
+    
+        countdown.textContent = `${String(horasRestantes).padStart(2, '0')}:${String(minutosRestantes).padStart(2, '0')}:${String(segundosRestantes).padStart(2, '0')}`;
+    
+        // Disparar alertas - CORREÇÃO AQUI
+        const ultimos15Minutos = 15 * 60 * 1000;
+        const ultimos5Minutos = 5 * 60 * 1000;
+        
+        if (tempoRestante <= ultimos15Minutos && tempoRestante > ultimos5Minutos && !alerta15MinDisparado) {
+            audioAlert.currentTime = 0;
+            audioAlert.play();
+            alerta15MinDisparado = true;
+            console.log("Alerta de 15 minutos disparado");
+        }
+    
+        if (tempoRestante <= ultimos5Minutos && tempoRestante > 0 && !alerta5MinDisparado) {
+            audioAlert.currentTime = 0;
+            audioAlert.play();
+            alerta5MinDisparado = true;
+            console.log("Alerta de 5 minutos disparado");
+        }
+    
+        // Finalizar quando o tempo acabar
+        if (tempoRestante <= 0) {
+            clearInterval(timer);
+            audioEnd.currentTime = 0;
+            audioEnd.play();
+            countdown.textContent = "Fim da Prova!";
+            contadorAtivo = false;
+            startButton.textContent = "Iniciar Contador";
+        }
     }
 
     function pausarContador() {
@@ -158,9 +198,31 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("tempoDecorrido", tempoDecorridoSalvo);
         startButton.textContent = "Iniciar Contador";
         countdown.textContent = "00:00:00";
+        alerta15MinDisparado = false;
+        alerta5MinDisparado = false;
         gerarHorarios(daySelect.value);
     }
 
+    // Função para alterar a velocidade
+    function setSpeed(multiplier) {
+        speedMultiplier = multiplier;
+        
+        // Atualiza a classe ativa dos botões
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.speed) === multiplier);
+        });
+        
+        // Se o contador estiver ativo, reinicia com a nova velocidade
+        if (contadorAtivo) {
+            const wasPaused = startButton.textContent === 'Retomar Contador';
+            clearInterval(timer);
+            if (!wasPaused) {
+                timer = setInterval(updateTimer, 1000 / speedMultiplier);
+            }
+        }
+    }
+
+    // Event Listeners
     startButton.addEventListener("click", iniciarContador);
     pauseButton.addEventListener("click", pausarContador);
     resetButton.addEventListener("click", resetarContador);
@@ -173,10 +235,17 @@ document.addEventListener("DOMContentLoaded", function () {
         gerarHorarios(daySelect.value);
     });
 
-    // Inicializa com os horários do primeiro dia
+    // Event listeners para os botões de velocidade
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('speed-btn')) {
+            setSpeed(parseInt(e.target.dataset.speed));
+        }
+    });
+
+    // Inicializar
     gerarHorarios(daySelect.value);
 
-    // Iniciar o contador com o tempo salvo, caso já tenha sido iniciado antes
+    // Continuar de onde parou
     if (tempoDecorridoSalvo > 0) {
         iniciarContador();
     }
